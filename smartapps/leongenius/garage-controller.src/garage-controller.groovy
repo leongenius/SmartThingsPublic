@@ -26,10 +26,9 @@ definition(
 
 preferences {
 	section("Door config") {
-		// TODO: put inputs here
-        input("theSensor", "capability.contactSensor", required: true, title: "sensor")
-        input("theSwitch", "capability.momentary", required: true, title: "switch")
-
+        input("theDoor", "capability.contactSensor", required: true, title: "Door sensor")
+        input("theSwitch", "capability.momentary", required: true, title: "Door switch")
+        input("theCar", "capability.presenceSensor", required: true, title: "Car sensor")
 	}
 }
 
@@ -47,7 +46,67 @@ def updated() {
 }
 
 def initialize() {
-	// TODO: subscribe to attributes, devices, locations, etc.
+	subscribe(theCar, "presence", presenceHandler);
+    subscribe(theDoor, "status.garage-open", doorOpenedHandler);
+    subscribe(theDoor, "status.garage-closed", doorClosedHandler);
+    subscribe(theDoor, "status", defaultEventHandler);
+    state.ready = true;
 }
 
-// TODO: implement event handlers
+def presenceHandler(evt) {
+    log.debug("presenceHandler called: ${evt}");
+    def doorStatus = theDoor.currentState("status")?.value;
+    def carPresence = theCar.currentState("presence")?.value;
+    log.debug("presenceHandler doorStatus=${doorStatus}, carPresence=${carPresence}");
+    if (!isReady()) {
+    	log.debug("Door or switch is not ready.");
+        getReadyInOneMinute();
+        return;
+    }
+    if (carPresence == "present" && doorStatus == "garage-closed") {
+        log.debug("presenceHandler: open door now");
+        theSwitch.push();
+        getReadyInOneMinute();
+    } else if (carPresence == "not present" && doorStatus == "garage-open") {
+    	log.debug("presenceHandler: close door now");
+        theSwitch.push();
+        getReadyInOneMinute();
+    }
+}
+
+def doorOpenedHandler(evt) {
+	log.debug("doorOpenedHandler: ${evt}");
+    getReadyInOneMinute();
+    return;
+}
+
+def doorClosedHandler(evt) {
+	log.debug("doorClosedHandler: ${evt}");
+    getReadyInOneMinute();
+    return;
+}
+
+def defaultEventHandler(evt) {
+	log.debug("defaultEventHandler: event.name=${evt.name}, event.value=${evt.value}");
+}
+
+def getReadyInOneMinute() {
+	if (state.nextReadyMs != null && state.nextReadyMs > now()) {
+    	// already in waiting-for-ready status; do nothing
+        def readyIn = (state.nextReadyMs - now()) / 1000;
+        log.debug("Will be ready in ${readyIn} seconds");
+        return;
+    }
+    log.debug("Set state.ready=false and get ready in 60 seconds");
+	state.ready = false;
+    state.nextReadyMs = now() + 60 * 1000;
+    runIn(60, getReady);
+}
+
+def getReady() {
+	state.ready = true;
+}
+
+def isReady() {
+	return state.ready == true;
+}
