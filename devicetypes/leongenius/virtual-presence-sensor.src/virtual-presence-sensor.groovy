@@ -1,5 +1,5 @@
 /**
- *  RestMomentaryButton
+ *  Virtual Presence Sensor
  *
  *  Copyright 2017 Leon Zhou
  *
@@ -14,20 +14,9 @@
  *
  */
 metadata {
-	definition (name: "RestMomentaryButton", namespace: "leongenius", author: "Leon Zhou") {
+	definition (name: "Virtual Presence Sensor", namespace: "leongenius", author: "Leon Zhou") {
 		capability "Momentary"
-	}
-
-	preferences {
-    	input("actionMethod", "enum", title: "Action method", description: "Rest method to operate the device", required: true, options: [
-        	"POST": "POST"
-        ])
-        input("actionHost", "text", title: "IP/hostname:port", description: "Rest API host to operate the device", required: true)
-        input("actionPath", "text", title: "Action URI", description: "Rest API path to operate the device", required: true)
-    }
-    
-	simulator {
-		// TODO: define status and reply messages here
+		capability "Presence Sensor"
 	}
 
     tiles {
@@ -40,28 +29,30 @@ metadata {
 	}
 }
 
+def updated() {
+	state.presence = "present";
+}
+
+def installed() {
+	updated();
+}
+
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing '${description}'"
+	// TODO: handle 'presence' attribute
 
 }
 
 // handle commands
 def push() {
-	log.debug "Executing 'push', actionMethod=$actionMethod, actionHost=$actionHost, actionPath=$actionPath";
-    
-    try {    	
-        
-        def pushAction = new physicalgraph.device.HubAction(
-        	method: actionMethod,
-            path: actionPath,
-            headers: [
-            	HOST: actionHost
-            ]
-        );
-        sendEvent(name: "momentary", value: "pushed", isStateChange: true)
-   		return sendHubCommand(pushAction);
-    } catch (Exception e) {
-        log.debug "Hit Exception $e on $pushAction"
-    }
+	log.debug "Executing 'push'"
+    def currPresence = device.currentState("presence")?.value;
+    log.debug("Current presence=${currPresence}");
+    def eventMap = [
+    	name: "presence",
+        value: currPresence == "present" ? "not present" : "present"
+    ]
+    log.debug("Send event=${eventMap}");
+	sendEvent(eventMap)
 }
