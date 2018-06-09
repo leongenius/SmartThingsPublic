@@ -16,6 +16,7 @@
 metadata {
 	definition (name: "SonyBraviaOnOff", namespace: "leongenius", author: "Leon Zhou") {
 		capability "Momentary"
+        capability "Switch"
 	}
 
 
@@ -45,6 +46,14 @@ def parse(String description) {
 }
 
 // handle commands
+def on() {
+	push();
+}
+
+def off() {
+	push();
+}
+
 def push() {
 	log.debug "Executing 'push'"
     sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
