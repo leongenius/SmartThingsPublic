@@ -63,5 +63,6 @@ def push() {
                 'X-Auth-PSK':"${devicePsk}"
             ]
      )
-	sendHubAction(sonycmd)
+	sendHubCommand(sonycmd)
+    log.debug "SonyBraviaOnOff pushed"
 }
