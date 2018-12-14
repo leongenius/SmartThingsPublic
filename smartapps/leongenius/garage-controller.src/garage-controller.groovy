@@ -51,13 +51,15 @@ def initialize() {
     subscribe(theDoor, "status.garage-closed", doorClosedHandler);
     subscribe(theDoor, "status", defaultEventHandler);
     state.ready = true;
+    state.doorClosedByMe = false;
 }
 
 def presenceHandler(evt) {
     log.debug("presenceHandler called: ${evt}");
     def doorStatus = theDoor.currentState("status")?.value;
     def carPresence = theCar.currentState("presence")?.value;
-    log.debug("presenceHandler doorStatus=${doorStatus}, carPresence=${carPresence}");
+
+    log.debug("presenceHandler doorStatus=${doorStatus}, carPresence=${carPresence}, doorClosedByMe=${state.doorClosedByMe}");
     if (!isReady()) {
     	log.debug("Door or switch is not ready.");
         getReadyInOneMinute();
@@ -66,11 +68,15 @@ def presenceHandler(evt) {
     if (carPresence == "present" && doorStatus == "garage-closed") {
         log.debug("presenceHandler: open door now");
         theSwitch.push();
+        state.doorClosedByMe = false;
         getReadyInOneMinute();
     } else if (carPresence == "not present" && doorStatus == "garage-open") {
     	log.debug("presenceHandler: close door now");
         theSwitch.push();
+        state.doorClosedByMe = true;
         getReadyInOneMinute();
+    } else {
+    	state.doorClosedByMe = false;
     }
 }
 
