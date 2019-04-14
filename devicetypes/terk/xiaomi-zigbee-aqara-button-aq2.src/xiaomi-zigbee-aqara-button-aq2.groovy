@@ -89,13 +89,16 @@ def parse(String description) {
 	def now = new Date().format("yyyy MMM dd EEE h:mm:ss a", location.timeZone)
 	sendEvent(name: "lastCheckin", value: now)
 
+	return createButtonEvent(1);
+    /*
 	def results = []
 	if (description?.startsWith('on/off: '))
 	results = parseCustomMessage(description)
 	if (description?.startsWith('catchall:'))
 	results = parseCatchAllMessage(description)
-
+    log.debug "results: '${results}'"
 	return results;
+    */
 }
 
 def configure(){
